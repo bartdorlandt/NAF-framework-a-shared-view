@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+vars:
+  # CHANGE
+  BASE_NAME: "NAF"
+  TITLE: "The NAF Framework: a shared map for network automation"
+  KEYWORDS: "network automation, NAF, framework, netdevops, architecture, reference model"
+  DESCRIPTION: "A short talk introducing the Network Automation Forum reference framework and its six building blocks."
+  #
+  METADATA: "--title '{{.BASE_NAME}}: {{.TITLE}}'
+    --author 'Bart Dorlandt' --keywords '{{.KEYWORDS}}' --description '{{.DESCRIPTION}}'"
+  FILES:
+    sh: gfind -type f -maxdepth 1 -name "{{.BASE_NAME}}*.md" -printf "%P\n"
+  MAIN_OPTIONS: "--allow-local-files --theme-set dream.css"
+  OUTPUT_DIR: "presentation"
+
+tasks:
+  default: task -l --sort none
+
+  mkdir:presentation:
+    desc: Create presentation directory if it doesn't exist
+    internal: true
+    status:
+      - test -d {{.OUTPUT_DIR}}
+    cmds:
+      - mkdir -p {{.OUTPUT_DIR}}
+
+  export:pdf:
+    desc: Export the presentation to PDF
+    deps: [mkdir:presentation]
+    vars:
+      OPTIONS: "{{.MAIN_OPTIONS}} --pdf {{.METADATA}}"
+    cmds:
+      - for:
+          var: FILES
+        cmd: marp {{.OPTIONS}} -o {{.OUTPUT_DIR}}/{{.ITEM | replace ".md" ".pdf"}} {{.ITEM}}
+
+  export:pptx:
+    desc: Export the presentation to PPTX
+    deps: [mkdir:presentation]
+    vars:
+      OPTIONS: "{{.MAIN_OPTIONS}} --pptx {{.METADATA}}"
+    cmds:
+      - for:
+          var: FILES
+        cmd: marp {{.OPTIONS}} -o {{.OUTPUT_DIR}}/{{.ITEM | replace ".md" ".pptx"}} {{.ITEM}}
+
+  present:
+    desc: Present the presentation
+    vars:
+      OPTIONS: "{{.MAIN_OPTIONS}}"
+    cmds:
+      - open http://localhost:8080/
+      - marp {{.OPTIONS}} -s .
